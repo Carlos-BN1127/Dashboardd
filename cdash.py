@@ -29,7 +29,7 @@ def cargar_datos() -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
                 raise ValueError(f"Faltan columnas requeridas en {name}.csv")
         
         return calificaciones, asistencias, alumnos
-    
+        
     except FileNotFoundError as e:
         st.error(f"Error al cargar archivos: {str(e)}")
         st.stop()
@@ -74,7 +74,7 @@ def transformar_datos(
             st.warning("Advertencia: Hay valores nulos después de unir los datos.")
         
         return df
-    
+        
     except pd.errors.MergeError as e:
         st.error(f"Error al unir datos: {str(e)}")
         st.stop()
@@ -124,10 +124,12 @@ with st.sidebar:
     grupo = st.selectbox(
         "Selecciona un grupo:",
         options=["Todos"] + sorted(df["grupo"].unique().tolist())
+    ) # <--- ¡Aquí faltaba un paréntesis!
     
     semestre = st.selectbox(
         "Selecciona un semestre:",
         options=["Todos"] + sorted(df["semestre"].unique().tolist())
+    ) # <--- ¡Y aquí también!
     
     # Aplicar filtros
     filtrado = df.copy()

@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Académico</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js"></script>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --accent: #e74c3c;
+            --light: #ecf0f1;
+            --success: #2ecc71;
+            --warning: #f39c12;
+            --dark: #34495e;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        header::before {
+            content: "";
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
+            transform: rotate(30deg);
+        }
+        
+        h1 {
+            font-size: 2.4rem;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .subtitle {
+            font-size: 1.15rem;
+            opacity: 0.92;
+            max-width: 800px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .filters {
+            background: white;
+            padding: 22px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            margin-bottom: 30px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 25px;
+            align-items: center;
+        }
+        
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            min-width: 220px;
+            flex: 1;
+        }
+        
+        .filter-group label {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--dark);
+            font-size: 1.05rem;
+        }
+        
+        select {
+            padding: 12px 16px;
+            border: 1px solid #dde2e8;
+            border-radius: 8px;
+            background: white;
+            font-size: 1.05rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        
+        select:focus {
+            border-color: var(--secondary);
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(52, 152, 219, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 35px;
+        }
+        
+        @media (max-width: 1000px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+            padding: 25px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.12);
+        }
+        
+        .card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--secondary), var(--primary));
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 18px;
+            border-bottom: 1px solid #f0f2f5;
+        }
+        
+        .card-title {
+            font-size: 1.5rem;
+            color: var(--primary);
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .chart-container {
+            height: 320px;
+            position: relative;
+        }
+        
+        .alerts-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+            padding: 25px;
+            margin-bottom: 35px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .alerts-container::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--accent), #ff6b6b);
+        }
+        
+        .alert-card {
+            background-color: #fff9f9;
+            border-left: 4px solid var(--accent);
+            padding: 18px;
+            margin: 15px 0;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            animation: fadeIn 0.5s ease-in;
+            transition: all 0.3s ease;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.05);
+        }
+        
+        .alert-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+        }
+        
+        .alert-card.warning {
+            background-color: #fffbf0;
+            border-left-color: var(--warning);
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .student-info {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+        
+        .student-name {
+            font-weight: 700;
+            margin-bottom: 8px;
+            font-size: 1.1rem;
+            color: var(--dark);
+        }
+        
+        .student-details {
+            display: flex;
+            gap: 15px;
+            color: #7f8c8d;
+            font-size: 0.95rem;
+        }
+        
+        .metrics {
+            display: flex;
+            gap: 25px;
+            margin-right: 25px;
+        }
+        
+        .metric {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 100px;
+        }
+        
+        .metric-label {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+            margin-bottom: 5px;
+        }
+        
+        .metric-value {
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+        
+        .attendance-value {
+            color: var(--secondary);
+        }
+        
+        .average-value {
+            color: var(--primary);
+        }
+        
+        .no-alerts {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+            font-style: italic;
+            font-size: 1.1rem;
+        }
+        
+        .no-alerts p:first-child {
+            font-size: 1.4rem;
+            margin-bottom: 15px;
+            color: var(--success);
+        }
+        
+        .risk-indicator {
+            background: var(--accent);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            min-width: 100px;
+            text-align: center;
+            box-shadow: 0 3px 8px rgba(231, 76, 60, 0.3);
+        }
+        
+        .risk-indicator.warning {
+            background: var(--warning);
+            box-shadow: 0 3px 8px rgba(243, 156, 18, 0.3);
+        }
+        
+        footer {
+            text-align: center;
+            padding: 25px;
+            color: #7f8c8d;
+            font-size: 0.95rem;
+            border-top: 1px solid #eee;
+            margin-top: 20px;
+        }
+        
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.95rem;
+        }
+        
+        .legend-color {
+            width: 18px;
+            height: 18px;
+            border-radius: 4px;
+        }
+        
+        .data-info {
+            text-align: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-size: 0.95rem;
+            color: #6c757d;
+        }
+        
+        .highlight-box {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            border-left: 4px solid var(--secondary);
+        }
+        
+        .highlight-value {
+            font-weight: 700;
+            color: var(--primary);
+            font-size: 1.2rem;
+        }
+        
+        .subject-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .subject-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        
+        .subject-average {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--secondary);
+            background: rgba(52, 152, 219, 0.1);
+            padding: 5px 15px;
+            border-radius: 30px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>📊 Dashboard de Coordinación Académica</h1>
+        <p class="subtitle">Visualización de rendimiento académico, asistencias y alertas de riesgo para seguimiento estudiantil</p>
+    </header>
+    
+    <div class="filters">
+        <div class="filter-group">
+            <label for="group-filter">Filtrar por Grupo:</label>
+            <select id="group-filter">
+                <option value="all">Todos los Grupos</option>
+                <option value="A">Grupo A</option>
+                <option value="B">Grupo B</option>
+                <option value="C">Grupo C</option>
+            </select>
+        </div>
+        
+        <div class="filter-group">
+            <label for="semester-filter">Filtrar por Semestre:</label>
+            <select id="semester-filter">
+                <option value="all">Todos los Semestres</option>
+                <option value="1">Semestre 1</option>
+                <option value="2">Semestre 2</option>
+                <option value="3">Semestre 3</option>
+            </select>
+        </div>
+        
+        <div class="filter-group">
+            <label for="subject-filter">Filtrar por Materia:</label>
+            <select id="subject-filter">
+                <option value="all">Todas las Materias</option>
+                <option value="matematicas">Matemáticas</option>
+                <option value="ciencias">Ciencias</option>
+                <option value="historia">Historia</option>
+                <option value="espanol">Español</option>
+                <option value="ingles">Inglés</option>
+            </select>
+        </div>
+    </div>
+    
+    <div class="dashboard-grid">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">📚 Rendimiento por Materia</h2>
+            </div>
+            <div id="subject-chart-container">
+                <div class="chart-container">
+                    <canvas id="subject-performance"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">📈 Asistencia vs Rendimiento</h2>
+            </div>
+            <div class="chart-container">
+                <canvas id="attendance-performance"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="alerts-container">
+        <div class="card-header">
+            <h2 class="card-title">⚠️ Alertas de Riesgo Académico</h2>
+        </div>
+        <div id="alerts-list">
+            <!-- Las alertas se generarán dinámicamente -->
+        </div>
+    </div>
+    
+    <footer>
+        <p>Sistema de Monitoreo Académico - Datos actualizados al 2025 | Grupo de Desarrollo Académico</p>
+    </footer>
+
+    <script>
+        // Datos procesados desde el CSV
+        const academicData = {
+            groups: ['A', 'B', 'C'],
+            semesters: ['1', '2', '3'],
+            subjects: ['Matemáticas', 'Ciencias', 'Historia', 'Español', 'Inglés'],
+            students: []
+        };
+
+        // Procesar el CSV proporcionado
+        function processCSVData() {
+            // En un caso real, se usaría PapaParse para procesar el CSV
+            // Aquí generamos datos de ejemplo basados en la estructura del CSV
+            
+            const groups = ['A', 'B', 'C'];
+            const firstNames = ['María', 'Juan', 'Carlos', 'Ana', 'Luis', 'Laura', 'Pedro', 'Sofía', 'Miguel', 'Elena'];
+            const lastNames = ['García', 'Rodríguez', 'Martínez', 'López', 'González', 'Pérez', 'Sánchez', 'Ramírez', 'Torres', 'Flores'];
+            
+            for (let group of groups) {
+                for (let semester of ['1', '2', '3']) {
+                    for (let i = 1; i <= 35; i++) {
+                        const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+                        const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+                        
+                        const student = {
+                            id: `${group}${semester}${i}`,
+                            name: `${firstName} ${lastName}`,
+                            group: group,
+                            semester: semester,
+                            subjects: {
+                                matematicas: Math.floor(Math.random() * 30) + 50,
+                                ciencias: Math.floor(Math.random() * 35) + 45,
+                                historia: Math.floor(Math.random() * 40) + 40,
+                                espanol: Math.floor(Math.random() * 35) + 55,
+                                ingles: Math.floor(Math.random() * 30) + 60
+                            },
+                            attendance: Math.floor(Math.random() * 40) + 60
+                        };
+                        
+                        academicData.students.push(student);
+                    }
+                }
+            }
+        }
+        
+        processCSVData();
+        
+        // Elementos del DOM
+        const groupFilter = document.getElementById('group-filter');
+        const semesterFilter = document.getElementById('semester-filter');
+        const subjectFilter = document.getElementById('subject-filter');
+        const alertsList = document.getElementById('alerts-list');
+        const subjectChartContainer = document.getElementById('subject-chart-container');
+        
+        // Filtrado de datos
+        function filterData() {
+            const selectedGroup = groupFilter.value;
+            const selectedSemester = semesterFilter.value;
+            const selectedSubject = subjectFilter.value;
+            
+            return academicData.students.filter(student => {
+                const groupMatch = selectedGroup === 'all' || student.group === selectedGroup;
+                const semesterMatch = selectedSemester === 'all' || student.semester === selectedSemester;
+                return groupMatch && semesterMatch;
+            });
+        }
+        
+        // Calcular promedio por materia o de una materia específica
+        function calculateSubjectAverages(students, selectedSubject) {
+            const subjects = ['matematicas', 'ciencias', 'historia', 'espanol', 'ingles'];
+            const averages = {};
+            const counts = {};
+            
+            // Inicializar
+            for (let subject of subjects) {
+                averages[subject] = 0;
+                counts[subject] = 0;
+            }
+            
+            // Sumar calificaciones
+            for (let student of students) {
+                for (let subject of subjects) {
+                    averages[subject] += student.subjects[subject];
+                    counts[subject]++;
+                }
+            }
+            
+            // Calcular promedios
+            for (let subject of subjects) {
+                if (counts[subject] > 0) {
+                    averages[subject] = Math.round(averages[subject] / counts[subject]);
+                }
+            }
+            
+            // Si se selecciona una materia específica, devolver solo esa
+            if (selectedSubject !== 'all') {
+                return {
+                    [selectedSubject]: averages[selectedSubject]
+                };
+            }
+            
+            return averages;
+        }
+        
+        // Identificar estudiantes en riesgo
+        function identifyAtRiskStudents(students) {
+            return students.filter(student => {
+                // Calcular promedio general del estudiante
+                const subjects = Object.values(student.subjects);
+                const average = subjects.reduce((sum, grade) => sum + grade, 0) / subjects.length;
+                
+                // Condiciones de riesgo
+                return student.attendance < 70 && average < 70;
+            });
+        }
+        
+        // Gráfico de rendimiento por materia
+        let subjectPerformanceChart = null;
+        
+        function renderSubjectPerformanceChart(students, selectedSubject) {
+            const ctx = document.getElementById('subject-performance').getContext('2d');
+            const averages = calculateSubjectAverages(students, selectedSubject);
+            
+            // Destruir gráfico anterior si existe
+            if (subjectPerformanceChart) {
+                subjectPerformanceChart.destroy();
+            }
+            
+            const subjectNames = academicData.subjects;
+            const subjectKeys = ['matematicas', 'ciencias', 'historia', 'espanol', 'ingles'];
+            
+            const backgroundColors = [
+                'rgba(52, 152, 219, 0.7)',
+                'rgba(46, 204, 113, 0.7)',
+                'rgba(155, 89, 182, 0.7)',
+                'rgba(241, 196, 15, 0.7)',
+                'rgba(230, 126, 34, 0.7)'
+            ];
+            
+            const borderColors = [
+                'rgba(52, 152, 219, 1)',
+                'rgba(46, 204, 113, 1)',
+                'rgba(155, 89, 182, 1)',
+                'rgba(241, 196, 15, 1)',
+                'rgba(230, 126, 34, 1)'
+            ];
+            
+            // Preparar datos según si es una materia específica o todas
+            let labels, data, bgColors, borderColorsFinal;
+            
+            if (selectedSubject !== 'all') {
+                const subjectIndex = subjectKeys.indexOf(selectedSubject);
+                labels = [subjectNames[subjectIndex]];
+                data = [averages[selectedSubject]];
+                bgColors = [backgroundColors[subjectIndex]];
+                borderColorsFinal = [borderColors[subjectIndex]];
+            } else {
+                labels = subjectNames;
+                data = subjectKeys.map(key => averages[key]);
+                bgColors = backgroundColors;
+                borderColorsFinal = borderColors;
+            }
+            
+            subjectPerformanceChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Promedio de Calificaciones',
+                        data: data,
+                        backgroundColor: bgColors,
+                        borderColor: borderColorsFinal,
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            min: 50,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: 'Calificación Promedio'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `Promedio: ${context.parsed.y}%`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Actualizar información adicional si es una materia específica
+            if (selectedSubject !== 'all') {
+                const subjectIndex = subjectKeys.indexOf(selectedSubject);
+                const subjectName = subjectNames[subjectIndex];
+                const average = averages[selectedSubject];
+                
+                const infoContainer = document.createElement('div');
+                infoContainer.className = 'highlight-box';
+                infoContainer.innerHTML = `
+                    <div class="subject-header">
+                        <div class="subject-title">${subjectName}</div>
+                        <div class="subject-average">${average}%</div>
+                    </div>
+                    <p>Promedio de calificación en ${subjectName} para los filtros seleccionados.</p>
+                `;
+                
+                // Limpiar contenedor y agregar nueva información
+                const existingInfo = document.querySelector('.subject-info');
+                if (existingInfo) existingInfo.remove();
+                
+                infoContainer.classList.add('subject-info');
+                subjectChartContainer.appendChild(infoContainer);
+            } else {
+                // Eliminar información adicional si se muestran todas las materias
+                const existingInfo = document.querySelector('.subject-info');
+                if (existingInfo) existingInfo.remove();
+            }
+        }
+        
+        // Gráfico de dispersión asistencia vs rendimiento
+        let attendancePerformanceChart = null;
+        
+        function renderAttendancePerformanceChart(students, selectedSubject) {
+            const ctx = document.getElementById('attendance-performance').getContext('2d');
+            
+            // Destruir gráfico anterior si existe
+            if (attendancePerformanceChart) {
+                attendancePerformanceChart.destroy();
+            }
+            
+            // Preparar datos
+            const dataPoints = students.map(student => {
+                let grade;
+                if (selectedSubject !== 'all') {
+                    // Usar la calificación de la materia seleccionada
+                    grade = student.subjects[selectedSubject];
+                } else {
+                    // Calcular el promedio general
+                    const subjects = Object.values(student.subjects);
+                    grade = subjects.reduce((sum, grade) => sum + grade, 0) / subjects.length;
+                }
+                
+                return {
+                    x: student.attendance,
+                    y: Math.round(grade),
+                    student: student
+                };
+            });
+            
+            attendancePerformanceChart = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Estudiantes',
+                        data: dataPoints,
+                        backgroundColor: 'rgba(52, 152, 219, 0.7)',
+                        borderColor: 'rgba(52, 152, 219, 1)',
+                        borderWidth: 1,
+                        pointRadius: 6,
+                        pointHoverRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Porcentaje de Asistencia'
+                            },
+                            min: 50,
+                            max: 100
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: selectedSubject !== 'all' 
+                                    ? `Calificación en ${academicData.subjects[['matematicas','ciencias','historia','espanol','ingles'].indexOf(selectedSubject)]}` 
+                                    : 'Calificación Promedio',
+                            },
+                            min: 50,
+                            max: 100
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                title: function(context) {
+                                    const point = context[0];
+                                    return point.raw.student.name;
+                                },
+                                label: function(context) {
+                                    const point = context.raw;
+                                    const student = point.student;
+                                    
+                                    let gradeInfo = '';
+                                    if (selectedSubject !== 'all') {
+                                        gradeInfo = `Calificación: ${point.y}%`;
+                                    } else {
+                                        const subjects = Object.values(student.subjects);
+                                        const average = subjects.reduce((sum, grade) => sum + grade, 0) / subjects.length;
+                                        gradeInfo = `Promedio: ${Math.round(average)}%`;
+                                    }
+                                    
+                                    return [
+                                        `Grupo: ${student.group}`,
+                                        `Semestre: ${student.semester}`,
+                                        `Asistencia: ${point.x}%`,
+                                        gradeInfo
+                                    ];
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Mostrar alertas de estudiantes en riesgo
+        function renderRiskAlerts(students) {
+            const atRiskStudents = identifyAtRiskStudents(students);
+            
+            alertsList.innerHTML = '';
+            
+            if (atRiskStudents.length === 0) {
+                alertsList.innerHTML = `
+                    <div class="no-alerts">
+                        <p>🎉 ¡No se encontraron estudiantes en riesgo con los filtros actuales!</p>
+                        <p>Buen rendimiento académico y de asistencia.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            atRiskStudents.forEach(student => {
+                const subjects = Object.values(student.subjects);
+                const average = subjects.reduce((sum, grade) => sum + grade, 0) / subjects.length;
+                
+                const alertElement = document.createElement('div');
+                alertElement.className = 'alert-card';
+                alertElement.innerHTML = `
+                    <div class="student-info">
+                        <div class="student-name">${student.name}</div>
+                        <div class="student-details">
+                            <span>Grupo ${student.group}</span>
+                            <span>Semestre ${student.semester}</span>
+                            <span>ID: ${student.id}</span>
+                        </div>
+                    </div>
+                    <div class="metrics">
+                        <div class="metric">
+                            <span class="metric-label">Asistencia</span>
+                            <span class="metric-value attendance-value">${student.attendance}%</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Promedio</span>
+                            <span class="metric-value average-value">${Math.round(average)}%</span>
+                        </div>
+                    </div>
+                    <div class="risk-indicator">RIESGO</div>
+                `;
+                
+                alertsList.appendChild(alertElement);
+            });
+        }
+        
+        // Actualizar todos los componentes del dashboard
+        function updateDashboard() {
+            const selectedSubject = subjectFilter.value;
+            const filteredStudents = filterData();
+            
+            renderSubjectPerformanceChart(filteredStudents, selectedSubject);
+            renderAttendancePerformanceChart(filteredStudents, selectedSubject);
+            renderRiskAlerts(filteredStudents);
+            
+            // Actualizar contador de estudiantes
+            const dataInfo = document.querySelector('.data-info');
+            if (!dataInfo) {
+                const infoElement = document.createElement('div');
+                infoElement.className = 'data-info';
+                infoElement.innerHTML = `Mostrando datos de <span class="highlight-value">${filteredStudents.length}</span> estudiantes con los filtros seleccionados`;
+                document.querySelector('.alerts-container').prepend(infoElement);
+            } else {
+                dataInfo.innerHTML = `Mostrando datos de <span class="highlight-value">${filteredStudents.length}</span> estudiantes con los filtros seleccionados`;
+            }
+        }
+        
+        // Event listeners para los filtros
+        groupFilter.addEventListener('change', updateDashboard);
+        semesterFilter.addEventListener('change', updateDashboard);
+        subjectFilter.addEventListener('change', updateDashboard);
+        
+        // Inicializar el dashboard
+        document.addEventListener('DOMContentLoaded', updateDashboard);
+    </script>
+</body>
+</html>

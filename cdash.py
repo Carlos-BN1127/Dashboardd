@@ -3,26 +3,32 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Encabezado
-st.title("Dashboard Académico")
-st.write("Visualización de datos escolares")
+# Título del dashboard
+st.title("📊 Dashboard Académico")
 
-# Cargar datos de ejemplo
+# Cargar archivo CSV
 try:
-    calificaciones = pd.read_csv("calificaciones.csv")
-    st.success("Archivo de calificaciones cargado correctamente.")
+    df = pd.read_csv("calificaciones.csv")
+    st.success("✅ Archivo calificaciones.csv cargado correctamente.")
 except Exception as e:
-    st.error(f"No se pudo cargar calificaciones.csv: {e}")
-    calificaciones = pd.DataFrame()
+    st.error(f"❌ Error al cargar el archivo: {e}")
+    df = pd.DataFrame()
 
-# Si hay datos, mostrar gráfica
-if not calificaciones.empty:
-    st.write("Vista previa de los datos:")
-    st.dataframe(calificaciones.head())
+# Mostrar tabla de datos
+if not df.empty:
+    st.subheader("Vista previa de los datos:")
+    st.dataframe(df.head())
 
-    st.subheader("Promedios por materia")
-    fig, ax = plt.subplots()
-    sns.barplot(data=calificaciones, x="materia", y="calificacion", ax=ax, palette="viridis")
-    st.pyplot(fig)
+    st.subheader("Gráfico de promedio por materia:")
+    try:
+        # Agrupar y calcular promedio
+        promedio = df.groupby("materia")["calificacion"].mean().reset_index()
+
+        # Crear gráfico
+        fig, ax = plt.subplots()
+        sns.barplot(data=promedio, x="materia", y="calificacion", ax=ax, palette="viridis")
+        st.pyplot(fig)
+    except Exception as e:
+        st.error(f"Error al graficar: {e}")
 else:
-    st.warning("No hay datos para mostrar.")
+    st.warning("⚠️ No hay datos disponibles para graficar.")

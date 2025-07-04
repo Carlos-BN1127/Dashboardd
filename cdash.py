@@ -3,59 +3,40 @@ import streamlit as st
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# 🧩 HU-02: Procesar datos
+# DataFrame de ejemplo
+def crear_dataframe_ejemplo():
+    data = {
+        "grupo": ["A", "A", "B", "B"],
+        "semestre": [1, 1, 2, 2],
+        "materia": ["Matemáticas", "Historia", "Matemáticas", "Historia"],
+        "calificacion": [7.5, 8.0, 5.0, 9.0],
+        "asistencias": [15, 14, 10, 16],
+        "totales": [20, 20, 20, 20]
+    }
+    return pd.DataFrame(data)
+
 def transformar_datos(df):
     df["porcentaje_asistencia"] = (df["asistencias"] / df["totales"]) * 100
     return df
 
-# 🧩 HU-03: Promedio por materia
-def promedio_por_materia(df):
-    return df.groupby('materia')['calificacion'].mean().reset_index()
+# Resto de funciones iguales...
 
-# 🧩 HU-07: Alumnos en riesgo
-def alumnos_en_riesgo(df):
-    return df[(df['porcentaje_asistencia'] < 70) & (df['calificacion'] < 6)]
+st.title("Dashboard Académico - Ejemplo sin CSV")
 
-# 🚀 INICIO DEL DASHBOARD STREAMLIT
-st.set_page_config(page_title="Dashboard Académico", layout="wide")
-st.title("📊 Dashboard Académico - Proyecto Final Scrum")
+usar_ejemplo = st.checkbox("Usar datos de ejemplo")
 
-# Subir archivo CSV
-uploaded_file = st.file_uploader("Sube el archivo CSV con los datos académicos", type="csv")
-
-if uploaded_file is not None:
-    df_original = pd.read_csv(uploaded_file)
-    df = transformar_datos(df_original)
-
-    # 🧩 HU-05: Filtros por grupo y semestre
-    grupo = st.selectbox("Selecciona un grupo:", sorted(df["grupo"].unique()))
-    semestre = st.selectbox("Selecciona un semestre:", sorted(df["semestre"].unique()))
-    filtrado = df[(df["grupo"] == grupo) & (df["semestre"] == semestre)]
-
-    # 🧩 HU-03: Gráfico de barras - Promedio por materia
-    st.subheader("📚 Promedio General por Materia")
-    promedios = promedio_por_materia(filtrado)
-    fig1, ax1 = plt.subplots()
-    sns.barplot(data=promedios, x="materia", y="calificacion", ax=ax1, palette="viridis")
-    ax1.set_title("Promedio por materia")
-    ax1.set_ylabel("Calificación promedio")
-    ax1.set_xlabel("Materia")
-    st.pyplot(fig1)
-
-    # 🧩 HU-04: Gráfico de dispersión
-    st.subheader("📈 Relación entre Asistencia y Calificación")
-    fig2, ax2 = plt.subplots()
-    sns.scatterplot(data=filtrado, x="porcentaje_asistencia", y="calificacion", hue="materia", ax=ax2)
-    ax2.set_title("Dispersión Asistencia vs Calificación")
-    st.pyplot(fig2)
-
-    # 🧩 HU-07: Alumnos en riesgo
-    st.subheader("🚨 Alumnos en Riesgo de Reprobación")
-    riesgo = alumnos_en_riesgo(filtrado)
-    st.dataframe(riesgo)
-
-    # 🧩 HU-06: Estética y pie de página
-    st.markdown("<hr><center><i>Desarrollado por el equipo Scrum ✨</i></center>", unsafe_allow_html=True)
+if usar_ejemplo:
+    df_original = crear_dataframe_ejemplo()
 else:
-    st.warning("Por favor sube un archivo CSV para continuar.")
+    uploaded_file = st.file_uploader("Sube el archivo CSV", type="csv")
+    if uploaded_file is not None:
+        df_original = pd.read_csv(uploaded_file)
+    else:
+        st.warning("Por favor sube un archivo CSV o usa datos de ejemplo.")
+        st.stop()
+
+df = transformar_datos(df_original)
+
+# Aquí continúa el resto de tu dashboard igual...
+
 

@@ -2,20 +2,6 @@ import pandas as pd
 import streamlit as st
 import matplotlib.pyplot as plt
 import seaborn as sns
-import os
-
-# 🧩 HU-01: Cargar datos desde un solo CSV con manejo de error
-@st.cache_data
-def cargar_datos():
-    archivo = 'todos_los_codigos.csv'
-    st.write(f"Ruta actual: {os.getcwd()}")
-    try:
-        df = pd.read_csv(archivo)
-        st.success(f"Archivo '{archivo}' cargado correctamente.")
-        return df
-    except FileNotFoundError:
-        st.error(f"Archivo '{archivo}' no encontrado. Asegúrate de que el archivo exista y esté en la ruta correcta.")
-        return None
 
 # 🧩 HU-02: Procesar datos
 def transformar_datos(df):
@@ -34,10 +20,11 @@ def alumnos_en_riesgo(df):
 st.set_page_config(page_title="Dashboard Académico", layout="wide")
 st.title("📊 Dashboard Académico - Proyecto Final Scrum")
 
-# Cargar y transformar datos
-df_original = cargar_datos()
+# Subir archivo CSV
+uploaded_file = st.file_uploader("Sube el archivo CSV con los datos académicos", type="csv")
 
-if df_original is not None:
+if uploaded_file is not None:
+    df_original = pd.read_csv(uploaded_file)
     df = transformar_datos(df_original)
 
     # 🧩 HU-05: Filtros por grupo y semestre
@@ -70,5 +57,5 @@ if df_original is not None:
     # 🧩 HU-06: Estética y pie de página
     st.markdown("<hr><center><i>Desarrollado por el equipo Scrum ✨</i></center>", unsafe_allow_html=True)
 else:
-    st.stop()  # Detiene la ejecución si no hay datos
+    st.warning("Por favor sube un archivo CSV para continuar.")
 
